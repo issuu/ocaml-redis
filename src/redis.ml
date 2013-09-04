@@ -618,7 +618,6 @@ let pzrevrange connection key start stop callback =
 
 (* ZRANGE, but with the WITHSCORES option added on. *)
 let zrevrange_with_scores connection key start stop =
-  print_endline "the func";
   let cmd = ["ZREVRANGE"; key; string_of_int start; string_of_int stop; "WITHSCORES"] in
   score_transformer (expect_list (send_multi connection cmd))
 
@@ -628,7 +627,6 @@ let pzrevrange_with_scores connection key start stop callback =
   pipe_send_multi connection cmd k
 
 let zrangebyscore_with_scores connection ?(limit = Unlimited) key start stop =
-  print_endline "the other new func";
   let limit = match limit with
     | Unlimited    -> []
     | Limit (x, y) -> ["LIMIT"; string_of_int x; string_of_int y]
@@ -637,7 +635,6 @@ let zrangebyscore_with_scores connection ?(limit = Unlimited) key start stop =
   score_transformer (expect_list (send_multi connection cmd))
 
 let zrevrangebyscore_with_scores connection ?(limit = Unlimited) key start stop =
-  print_endline "the newer func";
   let limit = match limit with
     | Unlimited    -> []
     | Limit (0, 0) -> []
