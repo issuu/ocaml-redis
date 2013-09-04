@@ -13,23 +13,23 @@ Note that every command below will raise a {!RedisServerError} exception if the 
 
 (** Different types of redis keys, as per the TYPE keyword. To get a string representation, use {!Value.to_string}. *)
 
-module Value : sig 
+module Value : sig
 
-  type t = 
-    | Nil 
-    | String 
-    | List 
-    | Set 
+  type t =
+    | Nil
+    | String
+    | List
+    | Set
     | SortedSet
 
   val to_string : t -> string
-  val get : 'a option -> 'a 
+  val get : 'a option -> 'a
 
 end
 
 type timeout = Seconds of int | Wait
 
-type limit = Unlimited | Limit of int * int 
+type limit = Unlimited | Limit of int * int
 
 type aggregate = Min | Max | Sum
 
@@ -45,14 +45,14 @@ module Connection : sig
 
 end
 
-module Pipeline : sig 
+module Pipeline : sig
 
   (* buffer commands from this point on *)
-  val enable : 'a Connection.t -> unit 
+  val enable : 'a Connection.t -> unit
 
   (* receive and invoke continuations *)
   val receive : 'a Connection.t -> 'a -> 'a
-    
+
 end
 
 (** Returns a {!Connection.t} to be used by all the {!Redis} functions.
@@ -219,7 +219,7 @@ val pincr : 'a Connection.t -> string -> ('a -> int64 -> 'a) -> unit
 (** [incrby k i c] increments key [k] by interger [i] on connection [c], as per the [INCRBY] redis keyword.
     @return the new value of the key.
 *)
-val incrby : 'a Connection.t -> string -> int -> int64 
+val incrby : 'a Connection.t -> string -> int -> int64
 
 val pincrby : 'a Connection.t -> string -> int -> ('a -> int64 -> 'a) -> unit
 
@@ -373,7 +373,7 @@ val spop : 'a Connection.t -> string -> string option
 val pspop : 'a Connection.t -> string -> ('a -> string option -> 'a) -> unit
 
 (** [smove sk dk m c] moves the member [m] from the set at the source key [sk] to the set at the destination key [dk] on connection c, as per the [SMOVE] redis keyword.
-    @return [false] if the element was not found in the first set and no operation was done, [false] otherwise. 
+    @return [false] if the element was not found in the first set and no operation was done, [false] otherwise.
 *)
 val smove : 'a Connection.t -> string -> string -> string -> bool
 
@@ -486,26 +486,30 @@ val pzrevrange : 'a Connection.t -> string -> int -> int -> ('a -> string list -
 (** [zrevrange_withscores k s e c], returns a {i reversed ordered} list of members of the set at sorted key [k] between the start index [s] and the end index [e], inclusively, on connection [c]. This is exactly like the {!zrevrange} function except it also gives the score for each item.
     @return a list of [({string}, float)] for the specified range.
 *)
-val zrevrange_with_scores : 'a Connection.t -> string -> int -> int -> (string * float) list 
+val zrevrange_with_scores : 'a Connection.t -> string -> int -> int -> (string * float) list
 
 val pzrevrange_with_scores : 'a Connection.t -> string -> int -> int -> ('a -> (string * float) list -> 'a) -> unit
+
+val zrangebyscore_with_scores : 'a Connection.t -> ?limit:limit -> string -> float -> float -> (string * float) list
+
+val zrevrangebyscore_with_scores : 'a Connection.t -> ?limit:limit -> string -> float -> float -> (string * float) list
 
 (** [zrangebyscore k min max limit c] returns a list of all the members in sorted set at the key [k] with scores between [min] and [max], inclusively, on connection [c], as per the [ZRANGEBYSCORE] redis keyword.
     @param limit Pass in [`Limit(offset, limit)] to limit the number of returned values by [limit] offset by [offset].
 *)
 val zrangebyscore :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?limit:limit ->
   string ->
   float ->
   float -> string list
 
 val pzrangebyscore :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?limit:limit ->
   string ->
   float ->
-  float -> 
+  float ->
   ('a -> string list -> 'a) -> unit
 
 (** [zcard k c] returns the number of members in the sorted set at the key [k] on connection [c], as per the [ZCARD] redis keyword. *)
@@ -660,22 +664,22 @@ type sort_alpha = Alpha | NonAlpha
     @param alpha either [`NonAlpha] to sort numerically (the default) or [`Alpha] to sort alphanumerically.
 *)
 val sort :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?pattern:redis_sort_pattern ->
   ?limit:limit ->
   ?get:redis_sort_pattern ->
   ?order:sort_order ->
-  ?alpha:sort_alpha -> 
+  ?alpha:sort_alpha ->
   string -> string list
 
 val psort :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?pattern:redis_sort_pattern ->
   ?limit:limit ->
   ?get:redis_sort_pattern ->
   ?order:sort_order ->
-  ?alpha:sort_alpha -> 
-  string -> 
+  ?alpha:sort_alpha ->
+  string ->
   ('a -> string list -> 'a) -> unit
 
 (** [sort_get_many k gt pattern limit order alpha c] sorts a list, set or sorted set at key [k] on connection [c], as per the [SORT] redis keyword. This function is a way to use the [GET] keyword multiple times as per the redis spec and collate them into one list while not dealing with wrapping and unwrapping values from lists in the simplest case with {!sort}.
@@ -686,22 +690,22 @@ val psort :
     @param alpha either [`NonAlpha] to sort numerically (the default) or [`Alpha] to sort alphanumerically.
 *)
 val sort_get_many :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?pattern:redis_sort_pattern ->
   ?limit:limit ->
   ?order:sort_order ->
-  ?alpha:sort_alpha -> 
+  ?alpha:sort_alpha ->
   string ->
   string list -> string list list
 
 val psort_get_many :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?pattern:redis_sort_pattern ->
   ?limit:limit ->
   ?order:sort_order ->
-  ?alpha:sort_alpha -> 
+  ?alpha:sort_alpha ->
   string ->
-  string list -> 
+  string list ->
   ('a -> string list list -> 'a) -> unit
 
 (** [sort_and_store k gt d pattern limit order alpha c] sorts a list, set or sorted set at key [k] on connection [c], and places the results at key [d], as per the [SORT] redis keyword. This function is a way to use the [STORE] keyword with either one or multiple [GET]s times as per the redis spec.
@@ -713,24 +717,24 @@ val psort_get_many :
     @param alpha either [`NonAlpha] to sort numerically (the default) or [`Alpha] to sort alphanumerically.
 *)
 val sort_and_store :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?pattern:redis_sort_pattern ->
   ?limit:limit ->
   ?order:sort_order ->
-  ?alpha:sort_alpha -> 
+  ?alpha:sort_alpha ->
   string ->
   string list ->
   string -> int
 
 val psort_and_store :
-  'a Connection.t -> 
+  'a Connection.t ->
   ?pattern:redis_sort_pattern ->
   ?limit:limit ->
   ?order:sort_order ->
-  ?alpha:sort_alpha -> 
+  ?alpha:sort_alpha ->
   string ->
   string list ->
-  string -> 
+  string ->
   ('a -> int -> 'a) -> unit
 
 (** {3:persistence_cmd Persistence control commands} *)
@@ -781,5 +785,3 @@ val info : 'a Connection.t -> Info.t
 
 (** [slaveof a p c] makes the redis server a slave of another redis server at host [a] and port [o] on connection [c], as per the [SLAVEOF] redis keyword. *)
 val slaveof : 'a Connection.t -> string -> int -> unit
-
-  

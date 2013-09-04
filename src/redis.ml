@@ -6,7 +6,7 @@
 include Redis_common
 include Helpers
 
-(* From a string of the address, and a port as an int, 
+(* From a string of the address, and a port as an int,
    gets an input and output file discriptor *)
 let create_connection ?(addr = "127.0.0.1") ?(port = 6379) () =
   Connection.create addr port
@@ -19,7 +19,7 @@ let create_connection ?(addr = "127.0.0.1") ?(port = 6379) () =
 let ping connection =
   expect_status "PONG" (send connection "PING")
 
-let pping connection = 
+let pping connection =
   let k = Expect_status "PONG" in
   pipe_send connection "PING" k
 
@@ -64,10 +64,10 @@ let pgetset connection key new_value callback =
   pipe_send_multi connection ["GETSET"; key; new_value] k
 
 (* MGET *)
-let mget connection keys = 
+let mget connection keys =
   expect_multi (send_multi connection ("MGET" :: keys))
 
-let pmget connection keys callback = 
+let pmget connection keys callback =
   let k = Expect_multi callback in
   pipe_send_multi connection ("MGET" :: keys) k
 
@@ -85,7 +85,7 @@ let setex connection key timeout value =
   expect_success (send_multi connection cmd)
 
 let psetex connection key timeout value =
-  let cmd = ["SETEX"; key; (string_of_int timeout); value] 
+  let cmd = ["SETEX"; key; (string_of_int timeout); value]
   and k = Expect_success in
   pipe_send_multi connection cmd k
 
@@ -118,7 +118,7 @@ let incrby connection key value =
   expect_large_int (send_multi connection ["INCRBY"; key; string_of_int value])
 
 let pincrby connection key value callback =
-  let k = Expect_large_int callback in 
+  let k = Expect_large_int callback in
   pipe_send_multi connection ["INCRBY"; key; string_of_int value] k
 
 (* DECR *)
@@ -145,14 +145,14 @@ let pappend connection key value callback =
   let k = Expect_int callback in
   pipe_send_multi connection ["APPEND"; key; value] k
 
-(* GETRANGE, note that the word 'end' is a keyword in ocaml, 
+(* GETRANGE, note that the word 'end' is a keyword in ocaml,
    so it has been replaced by 'stop' *)
 let getrange connection key start stop =
   let cmd = ["GETRANGE"; key; string_of_int start; string_of_int stop] in
   expect_string (send_multi connection cmd)
 
 let pgetrange connection key start stop callback =
-  let cmd = ["GETRANGE"; key; string_of_int start; string_of_int stop] 
+  let cmd = ["GETRANGE"; key; string_of_int start; string_of_int stop]
   and k = Expect_string callback in
   pipe_send_multi connection cmd k
 
@@ -161,18 +161,18 @@ let exists connection key =
   expect_bool (send_multi connection ["EXISTS"; key])
 
 let pexists connection key callback =
-  let k = Expect_bool callback in 
+  let k = Expect_bool callback in
   pipe_send_multi connection ["EXISTS"; key] k
 
 (* DEL *)
-let del connection keys = 
+let del connection keys =
   expect_int (send_multi connection ("DEL" :: keys))
 
-let pdel connection keys callback = 
+let pdel connection keys callback =
   let k = Expect_int callback in
   pipe_send_multi connection ("DEL" :: keys) k
 
-(* Exactly like "del", except you do not need to provide a list, 
+(* Exactly like "del", except you do not need to provide a list,
    just one key. Not in spec *)
 let del_one connection key =
   expect_bool (send_multi connection ["DEL"; key])
@@ -181,7 +181,7 @@ let pdel_one connection key callback =
   let k = Expect_bool callback in
   pipe_send_multi connection ["DEL"; key] k
 
-(* TYPE, unfortunately type is an ocaml keyword, 
+(* TYPE, unfortunately type is an ocaml keyword,
    so it cannot be used as a function name *)
 let value_type connection key =
   expect_type (send_multi connection ["TYPE"; key])
@@ -199,7 +199,7 @@ let keys connection pattern =
   expect_list (send_multi connection ["KEYS"; pattern])
 
 let pkeys connection pattern callback =
-  let k = Expect_list callback in 
+  let k = Expect_list callback in
   pipe_send_multi connection ["KEYS"; pattern] k
 
 (* RANDOMKEY *)
@@ -235,10 +235,10 @@ let pdbsize connection callback =
   pipe_send_multi connection ["DBSIZE"] k
 
 (* EXPIRE *)
-let expire connection key seconds = 
+let expire connection key seconds =
   expect_bool (send_multi connection ["EXPIRE"; key; string_of_int seconds])
 
-let pexpire connection key seconds callback = 
+let pexpire connection key seconds callback =
   let k = Expect_bool callback in
   pipe_send_multi connection ["EXPIRE"; key; string_of_int seconds] k
 
@@ -286,25 +286,25 @@ let pllen connection key callback =
   let k = Expect_int callback in
   pipe_send_multi connection ["LLEN"; key] k
 
-(* LRANGE, please note that the word 'end' is a keyword in ocaml, 
+(* LRANGE, please note that the word 'end' is a keyword in ocaml,
    so it has been replaced by 'stop' *)
 let lrange connection key start stop =
   let cmd = ["LRANGE"; key; string_of_int start; string_of_int stop] in
   expect_list (send_multi connection cmd)
 
 let plrange connection key start stop callback =
-  let cmd = ["LRANGE"; key; string_of_int start; string_of_int stop] 
+  let cmd = ["LRANGE"; key; string_of_int start; string_of_int stop]
   and k = Expect_list callback in
   pipe_send_multi connection cmd k
 
-(* LTRIM, please note that the word 'end' is a keyword in ocaml, 
+(* LTRIM, please note that the word 'end' is a keyword in ocaml,
    so it has been replaced by 'stop' *)
 let ltrim connection key start stop =
   let cmd = ["LTRIM"; key; string_of_int start; string_of_int stop] in
   expect_success (send_multi connection cmd)
 
 let pltrim connection key start stop =
-  let cmd = ["LTRIM"; key; string_of_int start; string_of_int stop] 
+  let cmd = ["LTRIM"; key; string_of_int start; string_of_int stop]
   and k = Expect_success in
   pipe_send_multi connection cmd k
 
@@ -314,7 +314,7 @@ let lindex connection key index =
   expect_bulk (send_multi connection cmd)
 
 let plindex connection key index callback =
-  let cmd = ["LINDEX"; key; string_of_int index] 
+  let cmd = ["LINDEX"; key; string_of_int index]
   and k = Expect_bulk callback in
   pipe_send_multi connection cmd k
 
@@ -324,7 +324,7 @@ let lset connection key index value =
   expect_success (send_multi connection cmd)
 
 let plset connection key index value =
-  let cmd = ["LSET"; key; string_of_int index; value] 
+  let cmd = ["LSET"; key; string_of_int index; value]
   and k = Expect_success in
   pipe_send_multi connection cmd k
 
@@ -365,7 +365,7 @@ let prpoplpush connection src_key dest_key callback =
 let string_of_timeout = function
   | Seconds seconds -> string_of_int seconds
   | Wait       -> "0"
-    
+
 (* BLPOP, but for only one key *)
 let blpop connection ?(timeout = Wait) key =
   let cmd = ["BLPOP"; key; string_of_timeout timeout] in
@@ -380,19 +380,19 @@ let pblpop connection ?(timeout = Wait) key callback =
 let blpop_many connection ?(timeout = Wait) key_list =
   let cmd = ("BLPOP" :: key_list) @ [string_of_timeout timeout] in
   expect_kv_multi (send_multi connection cmd)
-    
+
 let pblpop_many connection ?(timeout = Wait) key_list callback =
   let cmd = ("BLPOP" :: key_list) @ [string_of_timeout timeout]
   and k = Expect_kv_multi callback in
   pipe_send_multi connection cmd k
-    
+
 (* BRPOP, but for only one key *)
 let brpop connection ?(timeout = Wait) key =
   let cmd = ["BRPOP"; key; string_of_timeout timeout] in
   expect_kv_multi (send_multi connection cmd)
 
 let pbrpop connection ?(timeout = Wait) key callback =
-  let cmd = ["BRPOP"; key; string_of_timeout timeout] 
+  let cmd = ["BRPOP"; key; string_of_timeout timeout]
   and k = Expect_kv_multi callback in
   pipe_send_multi connection cmd k
 
@@ -402,7 +402,7 @@ let brpop_many connection ?(timeout = Wait) key_list =
   expect_kv_multi (send_multi connection cmd)
 
 let pbrpop_many connection ?(timeout = Wait) key_list callback =
-  let cmd = "BRPOP" :: key_list @ [string_of_timeout timeout] 
+  let cmd = "BRPOP" :: key_list @ [string_of_timeout timeout]
   and k = Expect_kv_multi callback in
   pipe_send_multi connection cmd k
 
@@ -512,7 +512,7 @@ let sdiffstore connection dstkey from_key keys =
   expect_int (send_multi connection cmd)
 
 let psdiffstore connection dstkey from_key keys callback =
-  let cmd = "SDIFFSTORE" :: dstkey :: from_key :: keys 
+  let cmd = "SDIFFSTORE" :: dstkey :: from_key :: keys
   and k = Expect_int callback in
   pipe_send_multi connection cmd k
 
@@ -572,7 +572,7 @@ let zadd connection key score member =
   expect_bool (send_multi connection cmd)
 
 let pzadd connection key score member callback =
-  let cmd = ["ZADD"; key; format_float score; member] 
+  let cmd = ["ZADD"; key; format_float score; member]
   and k = Expect_bool callback in
   pipe_send_multi connection cmd k
 
@@ -584,14 +584,14 @@ let pzrem connection key member callback =
   let k = Expect_bool callback in
   pipe_send_multi connection ["ZREM"; key; member] k
 
-(* ZRANGE, please note that the word 'end' is a keyword in ocaml, 
+(* ZRANGE, please note that the word 'end' is a keyword in ocaml,
    so it has been replaced by 'stop' *)
 let zrange connection key start stop =
   let cmd = ["ZRANGE"; key; string_of_int start; string_of_int stop] in
   expect_list (send_multi connection cmd)
 
 let pzrange connection key start stop callback =
-  let cmd = ["ZRANGE"; key; string_of_int start; string_of_int stop] 
+  let cmd = ["ZRANGE"; key; string_of_int start; string_of_int stop]
   and k = Expect_list callback in
   pipe_send_multi connection cmd k
 
@@ -601,11 +601,11 @@ let zrange_with_scores connection key start stop =
   score_transformer (expect_list (send_multi connection cmd))
 
 let pzrange_with_scores connection key start stop callback =
-  let cmd = ["ZRANGE"; key; string_of_int start; string_of_int stop; "WITHSCORES"] 
+  let cmd = ["ZRANGE"; key; string_of_int start; string_of_int stop; "WITHSCORES"]
   and k = Score_transformer callback in
   pipe_send_multi connection cmd k
 
-(* ZREVRANGE, please note that the word 'end' is a keyword in ocaml, 
+(* ZREVRANGE, please note that the word 'end' is a keyword in ocaml,
 so it has been replaced by 'stop' *)
 let zrevrange connection key start stop =
   let cmd = ["ZREVRANGE"; key; string_of_int start; string_of_int stop] in
@@ -618,6 +618,7 @@ let pzrevrange connection key start stop callback =
 
 (* ZRANGE, but with the WITHSCORES option added on. *)
 let zrevrange_with_scores connection key start stop =
+  print_endline "the func";
   let cmd = ["ZREVRANGE"; key; string_of_int start; string_of_int stop; "WITHSCORES"] in
   score_transformer (expect_list (send_multi connection cmd))
 
@@ -626,7 +627,26 @@ let pzrevrange_with_scores connection key start stop callback =
   and k = Score_transformer callback in
   pipe_send_multi connection cmd k
 
-(* ZRANGEBYSCORE, please note that the word 'end' is a keyword in ocaml, 
+let zrangebyscore_with_scores connection ?(limit = Unlimited) key start stop =
+  print_endline "the other new func";
+  let limit = match limit with
+    | Unlimited    -> []
+    | Limit (x, y) -> ["LIMIT"; string_of_int x; string_of_int y]
+  in
+  let cmd = ["ZRANGEBYSCORE"; key; format_float start; format_float stop; "WITHSCORES"] @ limit in
+  score_transformer (expect_list (send_multi connection cmd))
+
+let zrevrangebyscore_with_scores connection ?(limit = Unlimited) key start stop =
+  print_endline "the newer func";
+  let limit = match limit with
+    | Unlimited    -> []
+    | Limit (0, 0) -> []
+    | Limit (x, y) -> ["LIMIT"; string_of_int x; string_of_int y]
+  in
+  let cmd = ["ZREVRANGEBYSCORE"; key; format_float start; format_float stop; "WITHSCORES"] @ limit in
+  score_transformer (expect_list (send_multi connection cmd))
+
+(* ZRANGEBYSCORE, please note that the word 'end' is a keyword in ocaml,
    so it has been replaced by 'stop' *)
 
 let zrangebyscore connection ?(limit = Unlimited) key start stop =
@@ -652,7 +672,7 @@ let zincrby connection key increment member =
   expect_float (send_multi connection cmd)
 
 let pzincrby connection key increment member callback =
-  let cmd = ["ZINCRBY"; key; format_float increment; member] 
+  let cmd = ["ZINCRBY"; key; format_float increment; member]
   and k = Expect_float callback in
   pipe_send_multi connection cmd k
 
@@ -704,19 +724,19 @@ let zremrangebyscore connection key min max =
   expect_int (send_multi connection cmd)
 
 let pzremrangebyscore connection key min max callback =
-  let cmd = ["ZREMRANGEBYSCORE"; key; format_float min; format_float max] 
+  let cmd = ["ZREMRANGEBYSCORE"; key; format_float min; format_float max]
   and k = Expect_int callback in
   pipe_send_multi connection cmd k
 
 let keylen l = string_of_int (List.length l)
 
-let string_of_aggregate a = 
-  let s = match a with 
-    | Sum -> "SUM" 
-    | Min -> "MIN" 
+let string_of_aggregate a =
+  let s = match a with
+    | Sum -> "SUM"
+    | Min -> "MIN"
     | Max -> "MAX"
-  in 
-  ["AGGREGATE"; s] 
+  in
+  ["AGGREGATE"; s]
 
 let zunioncmd cmd connection ?(aggregate = Sum) dstkey key_list =
   let cmd = [cmd; dstkey; keylen key_list] @ key_list @ (string_of_aggregate aggregate) in
@@ -727,7 +747,7 @@ let zinterstore connection = zunioncmd "ZINTERSTORE" connection
 
 let pzunioncmd cmd connection ?(aggregate = Sum) dstkey key_list callback =
   let cmd = [cmd; dstkey; keylen key_list] @ key_list @ (string_of_aggregate aggregate)
-  and k = Expect_int callback in 
+  and k = Expect_int callback in
   pipe_send_multi connection cmd k
 
 let pzunionstore connection = pzunioncmd "ZUNIONSTORE" connection
@@ -737,7 +757,7 @@ let zunioncmd_with_weights cmd connection ?(aggregate = Sum) dstkey key_list wei
   if List.length key_list != List.length weight_list
   then failwith ("Not as many weights were given as keys to " ^ cmd);
   let weights = List.map format_float weight_list in
-  let cmd = [cmd; dstkey; keylen key_list] 
+  let cmd = [cmd; dstkey; keylen key_list]
     @ key_list @ ("WEIGHTS" :: weights) @ (string_of_aggregate aggregate) in
   expect_int (send_multi connection cmd)
 
@@ -778,11 +798,11 @@ let phsetnx connection key field value callback =
 (* HDEL *)
 let hdel connection key field =
   expect_bool (send_multi connection ["HDEL"; key; field])
-    
+
 let phdel connection key field callback =
   let k = Expect_bool callback in
   pipe_send_multi connection ["HDEL"; key; field] k
-    
+
 (* HGET *)
 let hget connection key field =
   expect_bulk (send_multi connection ["HGET"; key; field])
@@ -797,7 +817,7 @@ let hmget connection key field_list =
   expect_multi (send_multi connection cmd)
 
 let phmget connection key field_list callback =
-  let cmd = "HMGET" :: key :: field_list 
+  let cmd = "HMGET" :: key :: field_list
   and k = Expect_multi callback in
   pipe_send_multi connection cmd k
 
@@ -871,8 +891,8 @@ let phgetall connection key callback =
 (* Some of the sort args need further parsing and are used across multiple functions. *)
 let parse_sort_args pattern limit order alpha =
   let pattern = match pattern with
-    | KeyPattern k        -> " BY " ^ k 
-    | FieldPattern (k, f) -> Printf.sprintf " BY %s->%s" k f 
+    | KeyPattern k        -> " BY " ^ k
+    | FieldPattern (k, f) -> Printf.sprintf " BY %s->%s" k f
     | NoSort              -> " BY nosort"
     | NoPattern           -> ""
   in
@@ -902,9 +922,9 @@ let sort connection
     ?(limit = Unlimited)
     ?(get = NoPattern)
     ?(order = Asc)
-    ?(alpha = NonAlpha) 
+    ?(alpha = NonAlpha)
     key =
-  let command = 
+  let command =
     let pattern, limit, order, alpha =
       parse_sort_args pattern limit order alpha in
     "SORT " ^ key ^ pattern ^ limit ^ (parse_get_arg get) ^ order ^ alpha in
@@ -915,23 +935,23 @@ let psort connection
     ?(limit = Unlimited)
     ?(get = NoPattern)
     ?(order = Asc)
-    ?(alpha = NonAlpha) 
+    ?(alpha = NonAlpha)
     key callback =
-  let command = 
+  let command =
     let pattern, limit, order, alpha =
       parse_sort_args pattern limit order alpha in
-    "SORT " ^ key ^ pattern ^ limit ^ (parse_get_arg get) ^ order ^ alpha 
+    "SORT " ^ key ^ pattern ^ limit ^ (parse_get_arg get) ^ order ^ alpha
   and k = Expect_list callback in
   pipe_send connection command k
 
 (* SORT, for multiple gets *)
-let sort_get_many connection 
+let sort_get_many connection
     ?(pattern = NoPattern)
     ?(limit = Unlimited)
     ?(order = Asc)
-    ?(alpha = NonAlpha) 
+    ?(alpha = NonAlpha)
     key get_patterns =
-  let command = 
+  let command =
     let pattern, limit, order, alpha =
       parse_sort_args pattern limit order alpha in
     let f rest n = rest ^ " GET " ^ n in
@@ -941,13 +961,13 @@ let sort_get_many connection
   let reply = send connection command in
   collate_n patlen (expect_list reply)
 
-let psort_get_many connection 
+let psort_get_many connection
     ?(pattern = NoPattern)
     ?(limit = Unlimited)
     ?(order = Asc)
-    ?(alpha = NonAlpha) 
+    ?(alpha = NonAlpha)
     key get_patterns callback =
-  let command = 
+  let command =
     let pattern, limit, order, alpha =
       parse_sort_args pattern limit order alpha in
     let f rest n = rest ^ " GET " ^ n in
@@ -962,9 +982,9 @@ let sort_and_store connection
     ?(pattern = NoPattern)
     ?(limit = Unlimited)
     ?(order = Asc)
-    ?(alpha = NonAlpha) 
+    ?(alpha = NonAlpha)
     key get_patterns dest_key =
-  let command = 
+  let command =
     let pattern, limit, order, alpha =
       parse_sort_args pattern limit order alpha in
     let f rest n = rest ^ " GET " ^ n in
@@ -977,9 +997,9 @@ let psort_and_store connection
     ?(pattern = NoPattern)
     ?(limit = Unlimited)
     ?(order = Asc)
-    ?(alpha = NonAlpha) 
+    ?(alpha = NonAlpha)
     key get_patterns dest_key callback =
-  let command = 
+  let command =
     let pattern, limit, order, alpha =
       parse_sort_args pattern limit order alpha in
     let f rest n = rest ^ " GET " ^ n in
@@ -1022,13 +1042,13 @@ let shutdown connection =
   just_send connection "SHUTDOWN";
   try
     match recv connection with
-      | Status x -> failwith x 
+      | Status x -> failwith x
       | _        -> failwith "Did not recognize what I got back"
   with End_of_file -> ()
 
 (* BGREWRITEAOF *)
 let bgrewriteaof connection =
-  expect_status 
+  expect_status
     "Background append only file rewriting started"
     (send connection "BGREWRITEAOF")
 
@@ -1042,7 +1062,7 @@ module Info = struct
 
   type t = {fields: string list; values: (string, string) Hashtbl.t}
 
-  let tokenizer text = 
+  let tokenizer text =
     let line_spliter line =
       let colon_index = String.index line ':' in
       let key = String.sub line 0 colon_index in
@@ -1052,9 +1072,9 @@ module Info = struct
     List.map line_spliter (Str.split (Str.regexp "\r\n") text)
 
   let create = function
-    | None -> 
+    | None ->
       failwith "No server info"
-    | Some text -> 
+    | Some text ->
       let values = Hashtbl.create 10 in
       let loader (key, value) = Hashtbl.add values key value; key in
       let fields = List.map loader (tokenizer text) in
@@ -1072,4 +1092,3 @@ let info connection =
 (* SLAVEOF *)
 let slaveof connection addr port =
   expect_success (send connection (Printf.sprintf "SLAVEOF %s %d" addr port))
-
