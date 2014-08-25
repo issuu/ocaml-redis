@@ -785,3 +785,21 @@ val info : 'a Connection.t -> Info.t
 
 (** [slaveof a p c] makes the redis server a slave of another redis server at host [a] and port [o] on connection [c], as per the [SLAVEOF] redis keyword. *)
 val slaveof : 'a Connection.t -> string -> int -> unit
+
+
+(** Transaction commands *)
+
+(* Marks the start of a transaction block. Subsequent commands will be queued for atomic execution using EXEC. *)
+val multi : 'a Connection.t -> unit
+
+(* Executes all previously queued commands in a transaction and restores the connection state to normal. *)
+val exec : 'a Connection.t -> string list
+
+(* Flushes all previously queued commands in a transaction and restores the connection state to normal. *)
+val discard : 'a Connection.t -> unit
+
+(* Marks the given keys to be watched for conditional execution of a transaction. *)
+val watch : 'a Connection.t -> string list -> unit
+
+(* Flushes all the previously watched keys for a transaction. *)
+val unwatch : 'a Connection.t -> unit

@@ -773,6 +773,31 @@ let pzunionstore_with_weights connection = pzunioncmd_with_weights "ZUNIONSTORE"
 let pzinterstore_with_weights connection = pzunioncmd_with_weights "ZINTERSTORE" connection
 
 (********************************)
+(* Transactional commands       *)
+(********************************)
+
+(* MULTI *)
+let multi connection =
+  expect_success (send connection "MULTI")
+
+(* DISCARD *)
+let discard connection =
+  expect_success (send connection "DISCARD")
+
+(* EXEC *)
+let exec connection =
+  expect_list (send connection "EXEC")
+
+(* WATCH *)
+let watch connection keys =
+
+  expect_success (send_multi connection ("WATCH" :: keys))
+
+(* UNWATCH *)
+let unwatch connection =
+  expect_success (send connection "UNWATCH")
+
+(********************************)
 (* Commands operating on hashes *)
 (********************************)
 
