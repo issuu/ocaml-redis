@@ -22,20 +22,18 @@ Building
 
 To build the library,
 
-    rake library
+    make
 
-should do the trick. From there, you will have to statically link build/redis.cmx, build/redis.cmo and build/redis.cmi with your code.
+should do the trick. From there, you will have to statically link _build/src/redis.cmx, _build/src/redis.cmo and _build/src/redis.cmi with your code.
 
 Testing
 -------
 
-To run all the unit tests, execute:
-
-    rake test
-
 To run a simple smoke test on a redis server *you do not mind completely wiping* running on your localhost, execute:
 
-    rake smoke_test
+    make test
+
+To run the Redis instance use `redis-server redis.conf` from the root of the project.
 
 Todo
 ----
