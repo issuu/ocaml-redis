@@ -40,12 +40,28 @@ let pauth connection password =
 (***************************************)
 
 (* SET *)
-let set connection key value =
-  expect_success (send_multi connection ["SET"; key; value])
 
-let pset connection key value =
+let set_command_args ?expiry_ms ?fail_if_key key value =
+  let expiry_ms_args = match expiry_ms with
+    | Some milliseconds -> ["PX" ; string_of_int milliseconds]
+    | None -> []
+  in
+  let fail_if_key_args = match fail_if_key with
+    | Some `Exists -> ["NX"]
+    | Some `Not_exists -> ["XX"]
+    | None -> []
+  in
+  let set_args = ["SET"; key; value] in
+  List.concat [ set_args ; expiry_ms_args ; fail_if_key_args]
+
+let set connection ?expiry_ms ?fail_if_key key value =
+  let args = set_command_args ?expiry_ms ?fail_if_key key value in
+  expect_success (send_multi connection args)
+
+let pset connection ?expiry_ms ?fail_if_key key value =
+  let args = set_command_args ?expiry_ms ?fail_if_key key value in
   let k = Expect_success in
-  pipe_send_multi connection ["SET"; key; value] k
+  pipe_send_multi connection args k
 
 (* GET *)
 let get connection key =

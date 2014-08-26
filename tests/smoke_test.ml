@@ -69,6 +69,24 @@ let suite =
 
              assert_bool "" (Redis.expireat conn "tim" (Unix.time() +. 10.));
              assert_bool "" (10 >= Redis.ttl conn "tim");
+
+             Redis.set conn ~fail_if_key:`Exists "setkey" "value";
+             assert_equal (one "value") (Redis.get conn "setkey");
+             assert_raises ~msg:"Should raise exception if key already exists"
+                           (Failure "expect_status: Unexpected Bulk(Nil)")
+                           (fun () -> Redis.set conn ~fail_if_key:`Exists "setkey" "value");
+
+             Redis.set conn ~fail_if_key:`Not_exists "setkey" "value";
+             assert_equal (one "value") (Redis.get conn "setkey");
+             assert_raises ~msg:"Should raise exception if key doesn't exist"
+                           (Failure "expect_status: Unexpected Bulk(Nil)")
+                           (fun () -> Redis.set conn ~fail_if_key:`Not_exists "setkeyexist" "value");
+
+             Redis.set conn ~expiry_ms:500 "setkey_expiry" "value";
+             assert_equal (one "value") (Redis.get conn "setkey_expiry");
+             Unix.sleep 1;
+             assert_equal ~msg:"Didn't expire" (None) (Redis.get conn "setkey_expiry");
+
            ));
 
       "list operations" >:: 

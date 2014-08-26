@@ -169,9 +169,9 @@ val pflushall : 'a Connection.t -> unit
 (** {3:string_cmd Commands operating on string values} *)
 
 (** [set k v c] sets key [k] to value [v] on connection [c], as per the [SET] redis keyword. *)
-val set : 'a Connection.t -> string -> string -> unit
+val set : 'a Connection.t -> ?expiry_ms:int -> ?fail_if_key:[< `Exists | `Not_exists ] -> string -> string -> unit
 
-val pset : 'a Connection.t -> string -> string -> unit
+val pset : 'a Connection.t -> ?expiry_ms:int -> ?fail_if_key:[< `Exists | `Not_exists ] -> string -> string -> unit
 
 (** [get k c] gets the key [k] on connection [c], as per the [GET] redis keyword. *)
 val get : 'a Connection.t -> string -> string option
