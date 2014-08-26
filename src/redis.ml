@@ -1045,13 +1045,10 @@ let shutdown connection =
 
 (* BGREWRITEAOF *)
 let bgrewriteaof connection =
-  expect_status
-    "Background append only file rewriting started"
-    (send connection "BGREWRITEAOF")
+  expect_any_status (send connection "BGREWRITEAOF")
 
 let pbgrewriteaof connection =
-  let k = Expect_status "Background append only file rewriting started" in
-  pipe_send connection "BGREWRITEAOF" k
+  pipe_send connection "BGREWRITEAOF" Expect_any_status
 
 (* Remote server control commands *)
 
@@ -1060,13 +1057,22 @@ module Info = struct
   type t = {fields: string list; values: (string, string) Hashtbl.t}
 
   let tokenizer text =
+    let is_empty line =
+      String.length line == 0
+    in
+    let is_comment line =
+      String.get line 0 == '#'
+    in
     let line_spliter line =
       let colon_index = String.index line ':' in
       let key = String.sub line 0 colon_index in
       let value = String.sub line (colon_index + 1) ((String.length line) - 1 -colon_index) in
       (key, value)
     in
-    List.map line_spliter (Str.split (Str.regexp "\r\n") text)
+    let lines = (Str.split (Str.regexp "\r\n") text) in
+    let lines_no_blank = List.filter (fun line -> not (is_empty line)) lines in
+    let lines_no_comments = List.filter (fun line -> not (is_comment line)) lines_no_blank in
+    List.map line_spliter lines_no_comments
 
   let create = function
     | None ->

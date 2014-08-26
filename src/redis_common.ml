@@ -91,6 +91,7 @@ end
 
 type 'a continuation = 
   | Expect_status of string
+  | Expect_any_status
   | Expect_success 
   | Expect_bulk of ('a -> string option -> 'a)
   | Expect_multi of ('a -> string option list -> 'a)
@@ -280,6 +281,11 @@ module Helpers = struct
   let fail_with_reply name reply = 
     failwith (name ^ ": Unexpected " ^ (string_of_response reply))
 
+  let expect_any_status reply =
+    match filter_error reply with
+    | Status x -> ()
+    | response -> fail_with_reply "expect_any_status" response
+
   (* For status replies, does error checking and display *)
   let expect_status special_status reply =
     match filter_error reply with
@@ -414,6 +420,7 @@ module Helpers = struct
         let reply = recv conn in
         match k with 
           | Expect_status status -> expect_status status reply; state
+          | Expect_any_status -> expect_any_status reply; state
           | Expect_success -> expect_success reply; state
           | Expect_bulk f -> f state (expect_bulk reply)
           | Expect_multi f -> f state (expect_multi reply)
