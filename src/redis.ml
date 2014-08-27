@@ -40,12 +40,28 @@ let pauth connection password =
 (***************************************)
 
 (* SET *)
-let set connection key value =
-  expect_success (send_multi connection ["SET"; key; value])
 
-let pset connection key value =
+let set_command_args ?expiry_ms ?fail_if_key key value =
+  let expiry_ms_args = match expiry_ms with
+    | Some milliseconds -> ["PX" ; string_of_int milliseconds]
+    | None -> []
+  in
+  let fail_if_key_args = match fail_if_key with
+    | Some `Exists -> ["NX"]
+    | Some `Not_exists -> ["XX"]
+    | None -> []
+  in
+  let set_args = ["SET"; key; value] in
+  List.concat [ set_args ; expiry_ms_args ; fail_if_key_args]
+
+let set connection ?expiry_ms ?fail_if_key key value =
+  let args = set_command_args ?expiry_ms ?fail_if_key key value in
+  expect_success (send_multi connection args)
+
+let pset connection ?expiry_ms ?fail_if_key key value =
+  let args = set_command_args ?expiry_ms ?fail_if_key key value in
   let k = Expect_success in
-  pipe_send_multi connection ["SET"; key; value] k
+  pipe_send_multi connection args k
 
 (* GET *)
 let get connection key =
@@ -1045,13 +1061,10 @@ let shutdown connection =
 
 (* BGREWRITEAOF *)
 let bgrewriteaof connection =
-  expect_status
-    "Background append only file rewriting started"
-    (send connection "BGREWRITEAOF")
+  expect_any_status (send connection "BGREWRITEAOF")
 
 let pbgrewriteaof connection =
-  let k = Expect_status "Background append only file rewriting started" in
-  pipe_send connection "BGREWRITEAOF" k
+  pipe_send connection "BGREWRITEAOF" Expect_any_status
 
 (* Remote server control commands *)
 
@@ -1060,13 +1073,22 @@ module Info = struct
   type t = {fields: string list; values: (string, string) Hashtbl.t}
 
   let tokenizer text =
+    let is_empty line =
+      String.length line == 0
+    in
+    let is_comment line =
+      String.get line 0 == '#'
+    in
     let line_spliter line =
       let colon_index = String.index line ':' in
       let key = String.sub line 0 colon_index in
       let value = String.sub line (colon_index + 1) ((String.length line) - 1 -colon_index) in
       (key, value)
     in
-    List.map line_spliter (Str.split (Str.regexp "\r\n") text)
+    let lines = (Str.split (Str.regexp "\r\n") text) in
+    let lines_no_blank = List.filter (fun line -> not (is_empty line)) lines in
+    let lines_no_comments = List.filter (fun line -> not (is_comment line)) lines_no_blank in
+    List.map line_spliter lines_no_comments
 
   let create = function
     | None ->
