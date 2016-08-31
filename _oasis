@@ -17,7 +17,7 @@ Library redis
   BuildDepends: unix
   Install: true
   CompiledObject: best
-  
+
 Flag tests
   Description: Build and run tests
 
@@ -28,7 +28,7 @@ Executable test
   Build$:       flag(tests)
   BuildDepends: oUnit (>= 1.1.0), redis, str
   CompiledObject: best
-  
+
 Test main
   Run$:    flag(tests)
   Command: $test
