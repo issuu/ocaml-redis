@@ -3,41 +3,41 @@
 
    Utility code used mostly internally to the library. *)
 
-type timeout = 
+type timeout =
   | Seconds of int
   | Wait
 
-type limit = 
+type limit =
   | Unlimited
-  | Limit of int * int 
+  | Limit of int * int
 
-type aggregate = 
+type aggregate =
   | Min
   | Max
   | Sum
 
-type redis_sort_pattern = 
-  | KeyPattern of string 
-  | FieldPattern of string * string 
-  | NoSort 
+type redis_sort_pattern =
+  | KeyPattern of string
+  | FieldPattern of string * string
+  | NoSort
   | NoPattern
 
-type sort_order = 
+type sort_order =
   | Asc
   | Desc
 
-type sort_alpha = 
+type sort_alpha =
   | Alpha
   | NonAlpha
 
 exception RedisServerError of string
 
-(* This is an internal type used to transform 
+(* This is an internal type used to transform
    what the Redis server can handle into ocaml types. *)
 
-type response = 
-  | Status of string 
-  | Integer of int 
+type response =
+  | Status of string
+  | Integer of int
   | LargeInteger of int64
   | Bulk of string option
   | MultiBulk of string option list option
@@ -50,10 +50,10 @@ let string_of_response r =
     | Some x -> Printf.sprintf "String(%S)" x
     | None   -> "Nil"
   in
-  let multi_bulk_printer l = 
+  let multi_bulk_printer l =
     String.concat "; " (List.map bulk_printer l)
   in  match r with
-    | Status x           -> Printf.sprintf "Status(%S)" x 
+    | Status x           -> Printf.sprintf "Status(%S)" x
     | Integer x          -> Printf.sprintf "Integer(%d)" x
     | LargeInteger x     -> Printf.sprintf "LargeInteger(%Ld)" x
     | Error x            -> Printf.sprintf "Error(%S)" x
@@ -62,37 +62,37 @@ let string_of_response r =
     | MultiBulk (Some x) -> Printf.sprintf "MultiBulk(%s)" (multi_bulk_printer x)
 
 (* Simple function to print out a msg to stdout, should not be used in production code. *)
-let debug fmt = 
+let debug fmt =
   Printf.ksprintf (fun s -> print_endline s; flush stdout) fmt
 
 module Value = struct
 
-  type t = 
-    | Nil 
-    | String 
-    | List 
-    | Set 
+  type t =
+    | Nil
+    | String
+    | List
+    | Set
     | SortedSet
 
-  let get = function 
+  let get = function
     | Some x -> x
     | None   -> failwith "Value.get: unexpected None"
 
   let to_string = function
     | Nil       -> "Nil"
-    | String    -> "String" 
-    | List      -> "List" 
+    | String    -> "String"
+    | List      -> "List"
     | Set       -> "Set"
     | SortedSet -> "ZSet"
 
 end
-  
+
 (* Continuation for pipelined receive *)
 
-type 'a continuation = 
+type 'a continuation =
   | Expect_status of string
   | Expect_any_status
-  | Expect_success 
+  | Expect_success
   | Expect_bulk of ('a -> string option -> 'a)
   | Expect_multi of ('a -> string option list -> 'a)
   | Expect_bool of ('a -> bool -> 'a)
@@ -111,7 +111,7 @@ type 'a continuation =
 
 (* The Connection module handles some low level operations with the sockets *)
 module Connection = struct
-    
+
   type 'a t = {
     mutable pipeline : bool;
     in_ch : in_channel;
@@ -122,21 +122,23 @@ module Connection = struct
   }
 
   let create addr port =
-    let server = Unix.inet_addr_of_string addr in
-    let in_ch, out_ch = Unix.open_connection (Unix.ADDR_INET (server, port)) in
+    let open Unix in
+    let server = getaddrinfo addr (string_of_int port) [ AI_FAMILY PF_INET ] |> List.hd in
+    let in_ch, out_ch = open_connection server.ai_addr in
+
     let pipeline = false
     and continuations = []
     and in_buf = Buffer.create 100
     and out_buf = Buffer.create 100 in
     { pipeline; in_ch; out_ch; in_buf; out_buf; continuations }
-      
+
   (* Read arbitratry length string (hopefully quite short) from current pos in in_chan until \r\n *)
-  let read_string conn = 
+  let read_string conn =
     let s = input_line conn.in_ch in
     let n = String.length s - 1 in
-    if s.[n] = '\r' then 
+    if s.[n] = '\r' then
       String.sub s 0 n
-    else 
+    else
       s
 
   (* Read length caracters from in channel and output them as string *)
@@ -146,18 +148,18 @@ module Connection = struct
     Buffer.sub conn.in_buf 0 length
 
   (* Retrieve one character from the connection *)
-  let get_one_char conn = 
+  let get_one_char conn =
     input_char conn.in_ch
 
-  let enable_pipeline conn = 
+  let enable_pipeline conn =
     conn.pipeline <- true;
     Buffer.clear conn.out_buf
-        
+
   (* Add text to the pipeline *)
   let pipeline_cmd conn text =
     Buffer.add_string conn.out_buf text;
     Buffer.add_string conn.out_buf "\r\n"
-        
+
   let flush_pipeline conn =
     Buffer.output_buffer conn.out_ch conn.out_buf;
     flush conn.out_ch;
@@ -168,7 +170,7 @@ end
 
 module Helpers = struct
 
-  (* Gets the data from a '$x\r\nx\r\n' response, 
+  (* Gets the data from a '$x\r\nx\r\n' response,
      once the first '$' has already been popped off *)
   let get_bulk conn = function
     |  0 -> Bulk (Some (Connection.read_fixed_string conn 0))
@@ -180,7 +182,7 @@ module Helpers = struct
     match size with
       |  0 -> MultiBulk (Some [])
       | -1 -> MultiBulk None
-      |  n -> 
+      |  n ->
         let acc = ref [] in
         for i = 0 to n - 1 do
           let bulk = match input_char conn.Connection.in_ch with
@@ -189,9 +191,9 @@ module Helpers = struct
                 | Bulk x -> x
                 | _      -> failwith "get_multi_bulk: bulk expected"
             end
-            |  c  -> 
+            |  c  ->
               failwith ("get_multi_bulk: unexpected char " ^ (Char.escaped c))
-          in 
+          in
           acc := bulk :: !acc
         done;
         MultiBulk (Some (List.rev !acc))
@@ -204,12 +206,12 @@ module Helpers = struct
       LargeInteger (Int64.of_string response)
 
   (* Filters out any errors and raises them.
-     Raises RedisServerError with the error message 
+     Raises RedisServerError with the error message
      if getting an explicit error from the server ("-...")
-     or a RedisServerError with "Could not decipher response" 
+     or a RedisServerError with "Could not decipher response"
      for an unrecognised response type. *)
   let filter_error = function
-    | Error e -> 
+    | Error e ->
       raise (RedisServerError e)
     | x -> x
 
@@ -244,14 +246,14 @@ module Helpers = struct
     ()
 
   (* Will send a given list of tokens to send in list
-     using the unified request protocol. *)          
+     using the unified request protocol. *)
   let send_multi conn tokens =
     let open Connection in
     let token_length = (string_of_int (List.length tokens)) in
     let rec send_in_tokens tokens_left =
       match tokens_left with
         | [] -> ()
-        | h :: t -> 
+        | h :: t ->
           pipeline_cmd conn ("$" ^ (string_of_int (String.length h)));
           pipeline_cmd conn h;
           send_in_tokens t
@@ -268,7 +270,7 @@ module Helpers = struct
     let rec send_in_tokens tokens_left =
       match tokens_left with
         | [] -> ()
-        | h :: t -> 
+        | h :: t ->
           pipeline_cmd conn ("$" ^ (string_of_int (String.length h)));
           pipeline_cmd conn h;
           send_in_tokens t
@@ -278,7 +280,7 @@ module Helpers = struct
     conn.continuations <- k :: conn.continuations;
     ()
 
-  let fail_with_reply name reply = 
+  let fail_with_reply name reply =
     failwith (name ^ ": Unexpected " ^ (string_of_response reply))
 
   let expect_any_status reply =
@@ -291,7 +293,7 @@ module Helpers = struct
     match filter_error reply with
       | Status x when x = special_status -> ()
       | x -> fail_with_reply "expect_status" x
-        
+
   (* The most common case of expect_status is the "OK" status *)
   let expect_success = expect_status "OK"
 
@@ -325,14 +327,14 @@ module Helpers = struct
     | x             -> fail_with_reply "expect_string" x
 
   let expect_list = function
-      | MultiBulk (Some l) as x -> 
+      | MultiBulk (Some l) as x ->
         let rec f acc = function
           | [] -> List.rev acc
           | (Some x) :: t -> f (x :: acc) t
           | None :: _     -> fail_with_reply "expect_list" x
         in
         f [] l
-      | x -> 
+      | x ->
         fail_with_reply "expect_list" x
 
   let expect_multi = function
@@ -344,7 +346,7 @@ module Helpers = struct
     | MultiBulk None                  -> None
     | x                               -> fail_with_reply "expect_kv_multi" x
 
-  (* For list replies that should be floating point numbers, 
+  (* For list replies that should be floating point numbers,
      does error checking and casts to float *)
   let expect_float reply =
     match filter_error reply with
@@ -368,7 +370,7 @@ module Helpers = struct
       | x         -> fail_with_reply "expect_opt_float" x
 
   let filter_error = function
-    | Error e -> 
+    | Error e ->
       raise (RedisServerError e)
     | x -> x
 
@@ -390,16 +392,16 @@ module Helpers = struct
      collates it into a list of pairs [(v_1, s_1); (v_2, s_2); ... ;
      (v_n, s_n)] *)
 
-  let collate f l = 
+  let collate f l =
     let rec collate' f l acc =
       match l with
         | []            -> List.rev acc
-        | h1 :: h2 :: t -> collate' f t ((h1, f h2) :: acc) 
+        | h1 :: h2 :: t -> collate' f t ((h1, f h2) :: acc)
         | _             -> failwith "Did not provide a pair of field-values"
     in
     collate' f l []
 
-  let score_transformer = collate float_of_string 
+  let score_transformer = collate float_of_string
 
   (* Collates the returned list into a series of lists matching the 'GET' parameter *)
   let collate_n count responses =
@@ -414,11 +416,11 @@ module Helpers = struct
   module Pipeline = struct
 
     let enable = Connection.enable_pipeline
-        
-    let receive conn state = 
-      let f state k = 
+
+    let receive conn state =
+      let f state k =
         let reply = recv conn in
-        match k with 
+        match k with
           | Expect_status status -> expect_status status reply; state
           | Expect_any_status -> expect_any_status reply; state
           | Expect_success -> expect_success reply; state
