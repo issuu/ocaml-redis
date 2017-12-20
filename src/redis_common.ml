@@ -184,7 +184,7 @@ module Helpers = struct
       | -1 -> MultiBulk None
       |  n ->
         let acc = ref [] in
-        for i = 0 to n - 1 do
+        for _i = 0 to n - 1 do
           let bulk = match input_char conn.Connection.in_ch with
             | '$' -> begin
               match get_bulk conn (int_of_string (Connection.read_string conn)) with
@@ -202,7 +202,7 @@ module Helpers = struct
   let parse_integer_response response =
     try
       Integer (int_of_string response)
-    with Failure "int_of_string" ->
+    with _ ->
       LargeInteger (Int64.of_string response)
 
   (* Filters out any errors and raises them.
@@ -285,7 +285,7 @@ module Helpers = struct
 
   let expect_any_status reply =
     match filter_error reply with
-    | Status x -> ()
+    | Status _ -> ()
     | response -> fail_with_reply "expect_any_status" response
 
   (* For status replies, does error checking and display *)
@@ -322,7 +322,7 @@ module Helpers = struct
     | Bulk x -> x
     | x      -> fail_with_reply "expect_bulk" x
 
-  let rec expect_string = function
+  let expect_string = function
     | Bulk (Some x) -> x
     | x             -> fail_with_reply "expect_string" x
 
@@ -353,7 +353,7 @@ module Helpers = struct
       | Bulk (Some x) -> begin
         try
           float_of_string x
-        with Failure "float_of_string" ->
+        with _ ->
           failwith (Printf.sprintf "%S is not a floating point number" x)
       end
       | x -> fail_with_reply "expect_float" x
@@ -363,7 +363,7 @@ module Helpers = struct
       | Bulk (Some x) -> begin
         try
           Some (float_of_string x)
-        with Failure "float_of_string" ->
+        with _ ->
           failwith (Printf.sprintf "%S is not a floating point number" x)
       end
       | Bulk None -> None
@@ -408,7 +408,7 @@ module Helpers = struct
     let rec iter n l acc1 acc2 =
       match (n, l) with
         | (0, _)      -> iter count l [] ((List.rev acc1) :: acc2)
-        | (count, []) -> List.rev acc2
+        | (_, []) -> List.rev acc2
         | (_, h :: t) -> iter (n - 1) t (h :: acc1) acc2
     in
     iter count responses [] []

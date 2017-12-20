@@ -1,0 +1,13 @@
+opam-version: "1.2"
+maintainer: "Marek mku@issuu.com"
+author: "Rory Geoghegan"
+homepage: "https://github.com/rgeoghegan/ocaml-redis"
+dev-repo: "git://git@github.com:issuu/ocaml-redis.git"
+bug-reports: "https://github.com/issuu/ocaml-redis/issues"
+build: [["jbuilder" "build" "-p" name "-j" jobs]]
+build-test: [["jbuilder" "runtest" "-p" name "-j" jobs]]
+version: "1.0"
+depends: [
+  "jbuilder" {build}
+  "ounit" {test}
+]

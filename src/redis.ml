@@ -260,11 +260,11 @@ let pexpire connection key seconds callback =
 
 (* EXPIREAT *)
 let expireat connection key time =
-  expect_bool (send_multi connection ["EXPIREAT"; key; Printf.sprintf "%.f" time])
+  expect_bool (send_multi connection ["EXPIREAT"; key; Printf.sprintf "%.0f" time])
 
 let pexpireat connection key time callback =
   let k = Expect_bool callback in
-  pipe_send_multi connection ["EXPIREAT"; key; Printf.sprintf "%.f" time] k
+  pipe_send_multi connection ["EXPIREAT"; key; Printf.sprintf "%.0f" time] k
 
 (* TTL *)
 let ttl connection key =

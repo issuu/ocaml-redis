@@ -1,0 +1,9 @@
+(jbuild_version 1)
+
+(library
+ ((name redis)
+  (public_name ocaml-redis)
+  (libraries (unix))
+  (wrapped true)
+ )
+)
